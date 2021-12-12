@@ -1,13 +1,13 @@
-.newUser {
+.demography {
   flex: 4;
 }
 
-.newUserForm {
+.demographyForm {
   display: flex;
   flex-wrap: wrap;
 }
 
-.newUserItem {
+.demographyItem {
   width: 400px;
   display: flex;
   flex-direction: column;
@@ -15,36 +15,36 @@
   margin-right: 20px;
 }
 
-.newUserItem > label {
+.demographyItem > label {
   margin-bottom: 10px;
   font-size: 14px;
   font-weight: 600;
   color: rgb(151, 150, 150);
 }
 
-.newUserItem > input {
+.demographyItem > input {
   height: 20px;
   padding: 10px;
   border: 1px solid gray;
   border-radius: 5px;
 }
 
-.newUserGender > input {
+.demographyGender > input {
   margin-top: 15px;
 }
 
-.newUserGender>label{
+.demographyGender>label{
     margin: 10px;
     font-size: 18px;
     color: #555;
 }
 
-.newUserSelect{
+.demographySelect{
     height: 40px;
     border-radius: 5px;
 }
 
-.newUserButton{
+.demographyButton{
     width: 200px;
     border: none;
     background-color: darkblue;
