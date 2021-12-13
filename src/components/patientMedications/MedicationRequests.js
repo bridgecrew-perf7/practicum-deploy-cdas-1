@@ -1,32 +1,23 @@
 
-import React, { useState, useEffect } from 'react'
+import React, {useState, useEffect, useContext} from 'react'
 import { DataGrid } from '@mui/x-data-grid';
 import {Box, Grid,} from '@material-ui/core';
 import Controls from "../controls/Controls";
 import { useForm, Form } from "../useForm";
 import * as OptionUtils from "../../services/OptionUtils";
-import {getAddressItems, getCountryList, getEthnicity, getRace} from "../../services/OptionUtils";
+
+import {PatientContext} from "../../services/PatientContext";
+import FHIR from "fhirclient";
+
+const client = FHIR.client("https://r4.smarthealthit.org");
 
 const initialFValues = {
     patientID: '',
-    ssnNumber: '',
-    firstName: '',
-    lastName: '',
-    race: '',
-    ethnicity: '',
-    gender: '',
-    dateOfBirth: new Date(),
-    addressToUse: '',
-    homeAddress: '',
-    homeCity: '',
-    homeState: '',
-    homeCountry: '',
-    homeZipCode: '',
-    officeAddress: '',
-    officeCity: '',
-    officeState: '',
-    officeCountry: '',
-    officeZipCode: '',
+    medicationName: '',
+    medicationReason: '',
+    dosages: '',
+    performer: '',
+    authoredOn: new Date()
 }
 
 const columns = [
@@ -71,7 +62,60 @@ const rows = [
     { id: 2, lastName: 'Lannister', firstName: 'Cersei', age: 42 },
 ];
 
+const medicationSchema = {
+    "resourceType" : "MedicationRequest",
+    "meta" : {
+        "extension" : [
+            {
+                "url" : "http://hl7.org/fhir/StructureDefinition/instance-name",
+                "valueString" : "Self Tylenol Example"
+            },
+            {
+                "url" : "http://hl7.org/fhir/StructureDefinition/instance-description",
+                "valueMarkdown" : "This is a self tylenol example for the *MedicationRequest Profile*."
+            }
+        ],
+        "profile" : [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-medicationrequest"
+        ]
+    },
+    "identifier" : [
+        {
+            "use" : "official",
+            "system" : "http://acme.org/prescriptions",
+            "value" : "12345689"
+        }
+    ],
+    "status" : "active",
+    "intent" : "plan",
+    "reportedBoolean" : true,
+    "medicationCodeableConcept" : {
+        "coding" : [
+            {
+                "system" : "http://www.nlm.nih.gov/research/umls/rxnorm",
+                "code" : "1187314",
+                "display" : "Tylenol PM Pill"
+            }
+        ],
+        "text" : "Tylenol PM Pill"
+    },
+    "subject" : {
+        "reference" : "Patient/1367825"
+    },
+    "authoredOn" : "2021-12-13",
+    "requester" : {
+        "reference" : "Patient/1367825",
+        "display" : "**self-prescribed**"
+    },
+    "dosageInstruction" : [
+        {
+            "text" : "Takes 1-2 tablets once daily at bedtime as needed for restless legs"
+        }
+    ]
+}
+
 export default function MedicationRequests() {
+    const { patientIdContext, setPatientIdContext } = useContext(PatientContext);
 
     const validate = (fieldValues = values) => {
         let temp = { ...errors }
@@ -91,6 +135,8 @@ export default function MedicationRequests() {
             return Object.values(temp).every(x => x == "")
     }
 
+    initialFValues.patientID = patientIdContext;
+
     const {
         values,
         setValues,
@@ -103,9 +149,22 @@ export default function MedicationRequests() {
     const handleSubmit = e => {
         e.preventDefault()
         if (validate()){
-            // employeeService.insertEmployee(values)
-            console.log(values)
+            // console.log(values)
+            // Medication request
+            medicationSchema.subject.reference = 'Patient/' + patientIdContext
+            medicationSchema.requester.reference = 'Patient/' + patientIdContext
+            medicationSchema.authoredOn = values.authoredOn
+
+            // console.log(medicationSchema)
+            client.create(medicationSchema).then(
+                function(resObj) {
+                    console.log(resObj);
+                }).catch(console.error);
+
             resetForm()
+            initialFValues.patientID = patientIdContext;
+            setValues(initialFValues)
+
         }
     }
     return (
@@ -131,7 +190,7 @@ export default function MedicationRequests() {
                             label="Medication Name"
                             value={values.medicationName}
                             onChange={handleInputChange}
-                            options={OptionUtils.getCountryList()}
+                            options={OptionUtils.getmedicationCodeableConcept()}
                             error={errors.medicationName}
                         />
 
@@ -146,7 +205,7 @@ export default function MedicationRequests() {
 
                     </Grid>
 
-                    <Grid item xs={3}>
+                    <Grid item xs={6}>
                         <Controls.Input
                             label="Dosages"
                             name="dosages"
@@ -154,38 +213,34 @@ export default function MedicationRequests() {
                             onChange={handleInputChange}
                         />
                     </Grid>
+                    {/*<Grid item xs={3}>*/}
+                    {/*    <Controls.Select*/}
+                    {/*        name="dosagesUnit"*/}
+                    {/*        label="Select Unit"*/}
+                    {/*        value={values.dosagesUnit}*/}
+                    {/*        onChange={handleInputChange}*/}
+                    {/*        options={OptionUtils.getCountryList()}*/}
+                    {/*        error={errors.dosagesUnit}*/}
+                    {/*    />*/}
+                    {/*</Grid>*/}
                     <Grid item xs={3}>
-                        <Controls.Select
-                            name="dosagesUnit"
-                            label="Select Unit"
-                            value={values.dosagesUnit}
-                            onChange={handleInputChange}
-                            options={OptionUtils.getCountryList()}
-                            error={errors.dosagesUnit}
-                        />
+                        {/*<Controls.Input*/}
+                        {/*    label="Frequency"*/}
+                        {/*    name="doseFrequency"*/}
+                        {/*    value={values.doseFrequency}*/}
+                        {/*    onChange={handleInputChange}*/}
+                        {/*/>*/}
                     </Grid>
                     <Grid item xs={3}>
-                        <Controls.Input
-                            label="Frequency"
-                            name="doseFrequency"
-                            value={values.doseFrequency}
-                            onChange={handleInputChange}
-                        />
+                        {/*<Controls.Select*/}
+                        {/*    name="doseFrequency"*/}
+                        {/*    label="Select Unit"*/}
+                        {/*    value={values.doseFrequency}*/}
+                        {/*    onChange={handleInputChange}*/}
+                        {/*    options={OptionUtils.getCountryList()}*/}
+                        {/*    error={errors.doseFrequency}*/}
+                        {/*/>*/}
                     </Grid>
-                    <Grid item xs={3}>
-                        <Controls.Select
-                            name="doseFrequency"
-                            label="Select Unit"
-                            value={values.doseFrequency}
-                            onChange={handleInputChange}
-                            options={OptionUtils.getCountryList()}
-                            error={errors.doseFrequency}
-                        />
-                    </Grid>
-
-
-
-
 
                     <Grid item xs={6}>
                         <Grid container spacing={1} columnSpacing={{ xs: 1}}>
@@ -204,9 +259,9 @@ export default function MedicationRequests() {
                         <Grid container spacing={1} columnSpacing={{ xs: 1}}>
                             <Grid item xs={6}>
                                 <Controls.DatePicker
-                                    name="dateOfPrescription"
+                                    name="authoredOn"
                                     label="Date Of Prescription"
-                                    value={values.dateOfPrescription}
+                                    value={values.authoredOn}
                                     onChange={handleInputChange}
                                 />
                             </Grid>

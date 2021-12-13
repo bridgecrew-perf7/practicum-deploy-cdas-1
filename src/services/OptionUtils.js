@@ -49,3 +49,9 @@ export const getRespiratoryUnit = ()=>([
 export const getHeartRateUnit = ()=>([
     { id: 'heart_beat_unit', title: 'beats/minute' },
 ])
+
+export const getmedicationCodeableConcept = ()=>([
+    { id: '1187314', title: 'Tylenol PM Pill' },
+])
+
+

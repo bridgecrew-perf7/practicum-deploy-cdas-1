@@ -8,6 +8,7 @@ import * as OptionUtils from "../../services/OptionUtils";
 import {getAddressItems, getCountryList, getEthnicity, getRace} from "../../services/OptionUtils";
 import {PatientContext} from "../../services/PatientContext";
 import FHIR from "fhirclient";
+import { ObservationTable } from 'fhir-ui'
 
 const client = FHIR.client("https://r4.smarthealthit.org");
 
@@ -315,7 +316,6 @@ const initialFValues = {
 }
 
 const columns = [
-    { field: 'id', headerName: 'ID', width: 90 },
     {
         field: 'observationType',
         headerName: 'Observation Type',
@@ -345,13 +345,17 @@ const columns = [
 ];
 
 const rows = [
-    { id: 1, lastName: 'Snow', firstName: 'Jon', age: 35 },
-    { id: 2, lastName: 'Lannister', firstName: 'Cersei', age: 42 },
+    { observationType: 'Snow', observationValue: 'Jon', observationUnit: 35, observationDate: '' },
+    // { id: 2, lastName: 'Lannister', firstName: 'Cersei', age: 42 },
 ];
 
 export default function VitalSigns() {
     const { patientIdContext, setPatientIdContext } = useContext(PatientContext);
-    console.log(patientIdContext);
+    const [gridData, setGridData] = useState(null);
+    const [gridDataRefresh, setGridDataRefresh] = useState(null);
+    //console.log(patientIdContext);
+    //setGridData(rows);
+
 
     const validate = (fieldValues = values) => {
         let temp = { ...errors }
@@ -371,6 +375,8 @@ export default function VitalSigns() {
             return Object.values(temp).every(x => x == "")
     }
 
+    initialFValues.patientID = patientIdContext;
+
     const {
         values,
         setValues,
@@ -379,6 +385,54 @@ export default function VitalSigns() {
         handleInputChange,
         resetForm
     } = useForm(initialFValues, true, validate);
+
+    useEffect(() => {
+        var observationObj = null;
+        // get observation resoruce values
+        // you will need to update the below to retrive the weight and height values
+        var query = new URLSearchParams();
+
+        query.set("patient", '7461384e-130e-4fb8-a4ba-c0c80fee3f7a');
+        query.set("_count", 100);
+        query.set("_sort", "-date");
+        // query.set("code", [
+        //     'http://loinc.org|8462-4',
+        //     'http://loinc.org|8480-6',
+        //     'http://loinc.org|2085-9',
+        //     'http://loinc.org|2089-1',
+        //     'http://loinc.org|55284-4',
+        //     'http://loinc.org|3141-9',  // Body weight Measured
+        //     'http://loinc.org|29463-7',  // Body weight
+        //     'http://loinc.org|8302-2', // Body height
+        // ].join(","));
+
+        client.request("Observation?" + query, {
+            pageLimit: 0,
+            flat: true
+        }).then(
+            function(ob) {
+                setGridData(ob);
+                console.log(JSON.stringify(ob));
+                console.log(gridData)
+                // ob.forEach(function(observation) {
+                //     var BP = observation.component.find(function(component) {
+                //         return component.code.coding.find(function(coding) {
+                //             return coding.code == '8480-6';
+                //         });
+                //     });
+                //     if (BP) {
+                //         console.log(BP.valueQuantity);
+                //
+                //     }
+                // });
+
+                // var systolicbp = getBloodPressureValue(byCodes('55284-4'), '8480-6');
+                // var diastolicbp = getBloodPressureValue(byCodes('55284-4'), '8462-4');
+                // var hdl = byCodes('2085-9');
+                // var ldl = byCodes('2089-1');
+
+            });
+    }, [gridDataRefresh])
 
     const handleSubmit = e => {
         e.preventDefault()
@@ -446,9 +500,14 @@ export default function VitalSigns() {
                     console.log(resObj);
                 }).catch(console.error);
 
-            //resetForm()
+            resetForm()
+            initialFValues.patientID = patientIdContext;
+            setValues(initialFValues)
+            // gridDataRefresh, setGridDataRefresh
+            setGridDataRefresh(1)
         }
     }
+
     return (
         <div className="demography">
             <h1 className="demographyTitle">Patient Vital Signs</h1>
@@ -458,7 +517,7 @@ export default function VitalSigns() {
                         <Controls.Input
                             name="patientID"
                             label="Patient ID"
-                            value={patientIdContext}
+                            value={values.patientID}
                             onChange={handleInputChange}
                             error={errors.patientID}
                         />
@@ -649,13 +708,22 @@ export default function VitalSigns() {
                 </Grid>
             </Form>
             <div style={{ height: 200, width: '100%' }}>
-                <DataGrid
-                    rows={rows}
-                    columns={columns}
-                    pageSize={5}
-                    rowsPerPageOptions={[5]}
-                    checkboxSelection
-                    disableSelectionOnClick
+                {/*<DataGrid*/}
+                {/*    rows={rows}*/}
+                {/*    columns={columns}*/}
+                {/*    pageSize={5}*/}
+                {/*    rowsPerPageOptions={[5]}*/}
+                {/*    checkboxSelection*/}
+                {/*    disableSelectionOnClick*/}
+                {/*/>*/}
+                <ObservationTable
+                    observations={gridData}
+                    tableTitle="Observation List"
+                    tableRowSize="medium"
+                    hideDevices={true}
+                    hideCheckboxes={true}
+                    stickyHeader={true}
+                    tableHeight={360}
                 />
             </div>
         </div>
